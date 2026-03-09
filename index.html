@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ᵀᵐ〆BHOOYAH ×͜× - Official Guild Website</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js"></script>
+    <!-- EmailJS SDK -->
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;600;700&display=swap');
+        
+        :root {
+            --primary: #fbbf24;
+            --bg-dark: #020617;
+        }
+
+        body { 
+            font-family: 'Hind Siliguri', sans-serif; 
+            background-color: var(--bg-dark); 
+            color: #f1f5f9; 
+            overflow-x: hidden;
+        }
+
+        .bg-animate {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle at 50% 50%, #1e293b 0%, #020617 100%);
+            z-index: -1;
+        }
+
+        .bg-dots {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-image: radial-gradient(#334155 0.5px, transparent 0.5px);
+            background-size: 24px 24px;
+            opacity: 0.2;
+            z-index: -1;
+        }
+
+        .premium-card {
+            background: rgba(30, 41, 59, 0.4);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .premium-card:hover {
+            border-color: var(--primary);
+            box-shadow: 0 0 30px rgba(251, 191, 36, 0.1);
+            transform: translateY(-5px);
+        }
+
+        .gradient-text {
+            background: linear-gradient(135deg, #fff 0%, #fbbf24 50%, #f59e0b 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 0 10px rgba(251, 191, 36, 0.3));
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-15px); }
+            100% { transform: translateY(0px); }
+        }
+        .float-anim { animation: float 4s ease-in-out infinite; }
+
+        .logo-glow {
+            filter: drop-shadow(0 0 20px rgba(251, 191, 36, 0.4));
+        }
+
+        .btn-premium {
+            background: linear-gradient(135deg, #fbbf24 0%, #d97706 100%);
+            box-shadow: 0 4px 15px rgba(217, 119, 6, 0.3);
+            transition: all 0.3s ease;
+        }
+        .btn-premium:hover {
+            box-shadow: 0 0 25px rgba(251, 191, 36, 0.5);
+            transform: scale(1.02);
+        }
+        
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #020617; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--primary); }
+
+        /* Admin UI Helpers */
+        #adminOverlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(2, 6, 23, 0.98);
+            z-index: 9999;
+            overflow-y: auto;
+            padding: 2rem 1rem;
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+    <div class="bg-animate"></div>
+    <div class="bg-dots"></div>
+
+    <!-- Admin Access Trigger (Hidden Button at Bottom) -->
+    <div class="fixed bottom-4 right-4 z-[50]">
+        <button onclick="openLoginModal()" class="w-10 h-10 bg-white/5 rounded-full flex items-center justify-center border border-white/10 opacity-20 hover:opacity-100 transition-opacity">
+            <span class="text-xs">⚙️</span>
+        </button>
+    </div>
+
+    <!-- Login Modal -->
+    <div id="loginModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-[10000] hidden flex items-center justify-center p-4">
+        <div class="premium-card p-8 rounded-3xl w-full max-w-sm">
+            <h2 class="text-xl font-bold mb-4 text-yellow-500 text-center">অ্যাডমিন প্রবেশ</h2>
+            <input type="password" id="adminPassInput" placeholder="পাসওয়ার্ড দিন" class="w-full bg-slate-900 border border-slate-700 p-4 rounded-xl mb-4 text-white focus:outline-none focus:border-yellow-500 transition-all">
+            <div class="flex gap-2">
+                <button onclick="tryLogin()" class="flex-grow btn-premium text-white py-3 rounded-xl font-bold">লগইন</button>
+                <button onclick="closeLoginModal()" class="px-6 py-3 bg-red-500/20 text-red-500 rounded-xl font-bold">বাতিল</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Dashboard Overlay -->
+    <div id="adminOverlay">
+        <div class="max-w-4xl mx-auto">
+            <div class="flex justify-between items-center mb-10 bg-slate-900/50 p-6 rounded-2xl border border-white/5">
+                <div>
+                    <h2 class="text-2xl font-bold text-yellow-500">🛠️ এডমিন কন্ট্রোল</h2>
+                    <p class="text-xs text-gray-400">মেম্বার এবং ম্যানেজমেন্ট নিয়ন্ত্রণ করুন</p>
+                </div>
+                <button onclick="closeAdminPanel()" class="bg-red-500 text-white px-6 py-2 rounded-xl text-sm font-bold shadow-lg shadow-red-500/20">বন্ধ করুন</button>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <!-- Management Update -->
+                <div class="premium-card p-6 rounded-2xl space-y-4">
+                    <h3 class="font-bold text-lg border-b border-white/10 pb-2">⭐ ম্যানেজমেন্ট আপডেট</h3>
+                    <div class="space-y-3">
+                        <select id="mgmtRole" class="w-full bg-slate-800 border border-slate-700 p-3 rounded-xl text-sm outline-none">
+                            <option value="leader">Leader</option>
+                            <option value="acting">Acting Leader</option>
+                            <option value="elder">Elder</option>
+                        </select>
+                        <input type="text" id="mgmtName" placeholder="নতুন নাম" class="w-full bg-slate-800 border border-slate-700 p-3 rounded-xl text-sm outline-none">
+                        <input type="text" id="mgmtUid" placeholder="নতুন UID" class="w-full bg-slate-800 border border-slate-700 p-3 rounded-xl text-sm outline-none">
+                        <button onclick="updateManagement()" class="w-full bg-yellow-500 text-black font-bold py-3 rounded-xl text-sm">তথ্য আপডেট করুন</button>
+                    </div>
+                </div>
+
+                <!-- Add New Member -->
+                <div class="premium-card p-6 rounded-2xl space-y-4">
+                    <h3 class="font-bold text-lg border-b border-white/10 pb-2">👤 নতুন মেম্বার যোগ করুন</h3>
+                    <div class="space-y-3">
+                        <input type="text" id="newMemName" placeholder="মেম্বার নাম" class="w-full bg-slate-800 border border-slate-700 p-3 rounded-xl text-sm outline-none">
+                        <input type="text" id="newMemUid" placeholder="মেম্বার UID" class="w-full bg-slate-800 border border-slate-700 p-3 rounded-xl text-sm outline-none">
+                        <button onclick="addMember()" class="w-full bg-green-500 text-white font-bold py-3 rounded-xl text-sm">লিস্টে যোগ করুন</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Admin Member List (With Delete Option) -->
+            <div class="mt-10 premium-card p-6 rounded-2xl">
+                <h3 class="font-bold text-lg mb-4">📋 বর্তমান মেম্বার ও অ্যাকশন</h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left">
+                        <tbody id="adminMemberTable">
+                            <!-- JS will populate this -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Header Section -->
+    <header class="py-12 text-center px-4 relative overflow-hidden" data-aos="fade-down">
+        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-yellow-500/10 blur-[120px] rounded-full"></div>
+        
+        <div class="mb-4 inline-block relative group">
+            <div class="absolute inset-0 bg-yellow-500/20 blur-3xl rounded-full scale-75 group-hover:scale-110 transition-transform duration-700"></div>
+            <img src="https://i.ibb.co/C3mRPxYp/image-303973.jpg" alt="BHOOYAH Logo" class="w-40 h-40 md:w-56 md:h-56 object-cover rounded-full border-4 border-yellow-500/30 logo-glow float-anim relative z-10 shadow-2xl">
+        </div>
+        
+        <h1 class="text-4xl md:text-6xl font-extrabold gradient-text mb-3 tracking-tight">ᵀᵐ〆BHOOYAH ×͜×</h1>
+        
+        <div class="flex flex-wrap items-center justify-center gap-2">
+            <span class="px-3 py-1 rounded-full bg-slate-800 border border-slate-700 text-[10px] md:text-xs text-gray-400 font-bold tracking-wider">OFFICIAL GUILD</span>
+            <div class="flex items-center gap-2 bg-yellow-500/10 px-3 py-1 rounded-full border border-yellow-500/20">
+                <span class="text-yellow-500 text-[10px] md:text-xs font-bold">ID:</span>
+                <span class="text-yellow-500 font-mono text-xs md:text-sm font-bold tracking-tighter">3091984349</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-6xl mx-auto px-4 space-y-20 pb-20">
+        
+        <!-- Management Section -->
+        <section class="space-y-8" data-aos="fade-up">
+            <div class="flex items-center gap-4">
+                <div class="h-[1px] flex-grow bg-gradient-to-r from-transparent via-yellow-500/50 to-transparent"></div>
+                <h2 class="text-xl font-bold text-yellow-500 italic">⭐ ম্যানেজমেন্ট</h2>
+                <div class="h-[1px] flex-grow bg-gradient-to-r from-transparent via-yellow-500/50 to-transparent"></div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
+                <div class="premium-card p-6 rounded-3xl relative overflow-hidden group">
+                    <p class="text-[10px] uppercase tracking-widest text-yellow-500 mb-2 font-bold">Leader</p>
+                    <h3 class="text-xl font-bold mb-1" id="leaderName">Loading...</h3>
+                    <p class="text-gray-400 font-mono text-xs" id="leaderUid">---</p>
+                </div>
+                <div class="premium-card p-6 rounded-3xl relative overflow-hidden group">
+                    <p class="text-[10px] uppercase tracking-widest text-blue-500 mb-2 font-bold">Acting Leader</p>
+                    <h3 class="text-xl font-bold mb-1" id="actingLeaderName">Loading...</h3>
+                    <p class="text-gray-400 font-mono text-xs" id="actingLeaderUid">---</p>
+                </div>
+                <div class="premium-card p-6 rounded-3xl relative overflow-hidden group">
+                    <p class="text-[10px] uppercase tracking-widest text-green-500 mb-2 font-bold">Elder</p>
+                    <h3 class="text-xl font-bold mb-1" id="elderName">Loading...</h3>
+                    <p class="text-gray-400 font-mono text-xs" id="elderUid">---</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Member List Section -->
+        <section class="premium-card p-6 md:p-8 rounded-3xl" data-aos="fade-up">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+                <h2 class="text-2xl font-bold text-white">👥 মেম্বার লিস্ট</h2>
+                <span id="memberCount" class="bg-yellow-500/10 text-yellow-500 px-4 py-1 rounded-full text-xs border border-yellow-500/20">... Members</span>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left">
+                    <thead>
+                        <tr class="text-gray-400 border-b border-slate-700/50">
+                            <th class="py-4 px-4 font-semibold uppercase text-[10px] tracking-widest">প্লেয়ার নাম</th>
+                            <th class="py-4 px-4 font-semibold uppercase text-[10px] tracking-widest text-right">গেম UID</th>
+                        </tr>
+                    </thead>
+                    <tbody id="memberTable"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Monthly Tournament Section -->
+        <section class="space-y-8" data-aos="fade-up">
+            <div class="flex items-center gap-4">
+                <div class="h-[1px] flex-grow bg-gradient-to-r from-transparent via-red-500/50 to-transparent"></div>
+                <h2 class="text-xl font-bold text-red-500 italic uppercase tracking-widest text-center">🔥 মাসিক গিল্ড টুর্নামেন্ট</h2>
+                <div class="h-[1px] flex-grow bg-gradient-to-r from-transparent via-red-500/50 to-transparent"></div>
+            </div>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="premium-card p-8 rounded-[2rem] border-t-4 border-t-yellow-500 lg:col-span-1">
+                    <div class="flex items-center gap-3 mb-6">
+                        <div class="w-12 h-12 bg-yellow-500/20 rounded-2xl flex items-center justify-center text-yellow-500 text-2xl">📅</div>
+                        <div>
+                            <h3 class="font-bold text-xl">প্রতি মাসের ১০ তারিখ</h3>
+                            <p class="text-xs text-gray-400 uppercase tracking-widest">সময়সূচী</p>
+                        </div>
+                    </div>
+                    <ul class="space-y-4 text-sm text-gray-300">
+                        <li>🔹 গিল্ডের সকল মেম্বার অংশ নিতে পারবে।</li>
+                        <li>🔹 টুর্নামেন্ট শুরুর ৩০ মিনিট আগে নোটিশ দেওয়া হবে।</li>
+                        <li class="text-yellow-500 font-semibold">🔹 আইডি ও পাসওয়ার্ড গিল্ড গ্রুপে দেওয়া হবে।</li>
+                    </ul>
+                </div>
+
+                <div class="premium-card p-8 rounded-[2rem] border-t-4 border-t-red-500 lg:col-span-2 relative overflow-hidden">
+                    <div class="absolute top-0 right-0 p-4 opacity-10 text-9xl">🏆</div>
+                    <h3 class="text-2xl font-bold mb-8">💰 প্রাইজ লিস্ট</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="bg-white/5 p-5 rounded-2xl border border-yellow-500/20">
+                            <p class="text-[10px] text-yellow-500 font-bold uppercase mb-1">১ম পুরস্কার</p>
+                            <h4 class="text-lg font-bold">4x Weekly</h4>
+                        </div>
+                        <div class="bg-white/5 p-5 rounded-2xl border border-gray-400/20">
+                            <p class="text-[10px] text-gray-400 font-bold uppercase mb-1">২য় পুরস্কার</p>
+                            <h4 class="text-lg font-bold">2x Weekly</h4>
+                        </div>
+                        <div class="bg-white/5 p-5 rounded-2xl border border-orange-500/20">
+                            <p class="text-[10px] text-orange-500 font-bold uppercase mb-1">৩য় পুরস্কার</p>
+                            <h4 class="text-lg font-bold">115x Diamonds</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Rules Section -->
+        <section class="premium-card p-6 md:p-8 rounded-3xl" data-aos="fade-up">
+            <h2 class="text-2xl font-bold mb-8 text-red-500">📜 গিল্ডের শর্তাবলী</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                <div class="bg-white/5 p-4 rounded-xl border border-white/5">০১. প্রতিদিন গিল্ডে একটিভ থাকতে হবে।</div>
+                <div class="bg-white/5 p-4 rounded-xl border border-white/5">০২. টুর্নামেন্টের সময় নিয়ম মেনে খেলতে হবে।</div>
+                <div class="bg-white/5 p-4 rounded-xl border border-white/5">০৩. অন্য মেম্বারদের সাথে অভদ্র আচরণ করা যাবে না।</div>
+                <div class="bg-white/5 p-4 rounded-xl border border-white/5">০৪. গিল্ড কাস্টমে উপস্থিত থাকা বাধ্যতামূলক।</div>
+                <div class="bg-yellow-500/10 p-4 rounded-xl border border-yellow-500/30 col-span-1 md:col-span-2">
+                    ০৫. নামের সাথে অবশ্যই <span class="text-yellow-400">ᵀᵐ〆[Name] ×͜×</span> ট্যাগটি ব্যবহার করতে হবে।
+                </div>
+            </div>
+        </section>
+
+        <!-- Application Form Section -->
+        <section class="max-w-2xl mx-auto premium-card p-8 md:p-10 rounded-[2.5rem]" data-aos="fade-up">
+            <div class="text-center mb-10">
+                <h2 class="text-3xl font-bold mb-2">📝 জয়েনিং ফর্ম</h2>
+                <p class="text-gray-400 text-sm">তথ্য সরাসরি এডমিনের ইমেইলে যাবে</p>
+            </div>
+            <form id="applyForm" class="space-y-5">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <input type="text" id="app_name" name="from_name" required placeholder="আপনার নাম" class="w-full bg-slate-900/50 border border-slate-700 rounded-xl p-4 text-sm focus:outline-none focus:border-yellow-500 transition-all">
+                    <input type="text" id="app_uid" name="uid" required placeholder="আপনার UID" class="w-full bg-slate-900/50 border border-slate-700 rounded-xl p-4 text-sm focus:outline-none focus:border-yellow-500 transition-all">
+                </div>
+                <input type="number" id="app_level" name="level" required placeholder="আপনার লেভেল" class="w-full bg-slate-900/50 border border-slate-700 rounded-xl p-4 text-sm focus:outline-none focus:border-yellow-500 transition-all">
+                <button type="submit" id="submitBtn" class="w-full btn-premium text-white font-bold py-4 rounded-xl text-md mt-4">আবেদন জমা দিন</button>
+            </form>
+            <div id="statusMsg" class="mt-6 text-center hidden p-4 rounded-xl text-sm"></div>
+        </section>
+
+        <footer class="text-center pt-20 border-t border-white/5">
+            <p class="text-gray-600 text-[10px] uppercase tracking-widest">© 2024 ᵀᵐ〆BHOOYAH ×͜× | Official Web Space</p>
+        </footer>
+    </main>
+
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script>
+        AOS.init({ duration: 1000, once: true });
+
+        // EmailJS
+        (function() { emailjs.init("HuKvNOJcX5sBe86gM_"); })();
+
+        const firebaseConfig = JSON.parse(__firebase_config);
+        const app = firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const auth = firebase.auth();
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'booyah-guild-premium';
+
+        const ADMIN_PASS = "1234";
+
+        async function init() {
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await auth.signInWithCustomToken(__initial_auth_token);
+                } else {
+                    await auth.signInAnonymously();
+                }
+                loadManagement();
+                loadMembers();
+            } catch (err) { console.error(err); }
+        }
+
+        // --- ADMIN LOGIN LOGIC ---
+        function openLoginModal() { document.getElementById('loginModal').classList.remove('hidden'); }
+        function closeLoginModal() { document.getElementById('loginModal').classList.add('hidden'); }
+
+        function tryLogin() {
+            const val = document.getElementById('adminPassInput').value;
+            if (val === ADMIN_PASS) {
+                document.getElementById('adminOverlay').style.display = 'block';
+                closeLoginModal();
+                document.getElementById('adminPassInput').value = '';
+            } else {
+                alert('ভুল পাসওয়ার্ড!');
+            }
+        }
+
+        function closeAdminPanel() { document.getElementById('adminOverlay').style.display = 'none'; }
+
+        // --- DATABASE OPERATIONS ---
+        function loadManagement() {
+            const infoCol = db.collection('artifacts', appId, 'public', 'data', 'info');
+            infoCol.doc('leader').onSnapshot(doc => { if(doc.exists) { document.getElementById('leaderName').innerText = doc.data().name; document.getElementById('leaderUid').innerText = "UID: " + doc.data().uid; }});
+            infoCol.doc('acting').onSnapshot(doc => { if(doc.exists) { document.getElementById('actingLeaderName').innerText = doc.data().name; document.getElementById('actingLeaderUid').innerText = "UID: " + doc.data().uid; }});
+            infoCol.doc('elder').onSnapshot(doc => { if(doc.exists) { document.getElementById('elderName').innerText = doc.data().name; document.getElementById('elderUid').innerText = "UID: " + doc.data().uid; }});
+        }
+
+        function loadMembers() {
+            db.collection('artifacts', appId, 'public', 'data', 'members').onSnapshot(snap => {
+                const table = document.getElementById('memberTable');
+                const adminTable = document.getElementById('adminMemberTable');
+                document.getElementById('memberCount').innerText = `${snap.size} Members`;
+                
+                table.innerHTML = '';
+                adminTable.innerHTML = '';
+
+                snap.forEach(doc => {
+                    const m = doc.data();
+                    const id = doc.id;
+
+                    // User table
+                    table.innerHTML += `
+                        <tr class="border-b border-slate-800/20">
+                            <td class="py-4 px-4 text-sm">${m.name}</td>
+                            <td class="py-4 px-4 font-mono text-gray-500 text-xs text-right">${m.uid}</td>
+                        </tr>`;
+
+                    // Admin table with Delete action
+                    adminTable.innerHTML += `
+                        <tr class="border-b border-white/5">
+                            <td class="py-3 px-2 text-sm">${m.name} <br> <span class="text-[10px] text-gray-500">${m.uid}</span></td>
+                            <td class="py-3 px-2 text-right">
+                                <button onclick="deleteMember('${id}')" class="bg-red-500/20 text-red-500 text-[10px] px-3 py-1 rounded-lg border border-red-500/20">বাদ দিন</button>
+                            </td>
+                        </tr>`;
+                });
+            });
+        }
+
+        async function updateManagement() {
+            const role = document.getElementById('mgmtRole').value;
+            const name = document.getElementById('mgmtName').value;
+            const uid = document.getElementById('mgmtUid').value;
+
+            if(!name || !uid) return alert('নাম ও UID দিন!');
+
+            try {
+                await db.collection('artifacts', appId, 'public', 'data', 'info').doc(role).set({ name, uid });
+                alert('ম্যানেজমেন্ট আপডেট সফল!');
+                document.getElementById('mgmtName').value = '';
+                document.getElementById('mgmtUid').value = '';
+            } catch (e) { alert('সমস্যা হয়েছে!'); }
+        }
+
+        async function addMember() {
+            const name = document.getElementById('newMemName').value;
+            const uid = document.getElementById('newMemUid').value;
+
+            if(!name || !uid) return alert('তথ্য দিন!');
+
+            try {
+                await db.collection('artifacts', appId, 'public', 'data', 'members').add({ name, uid });
+                alert('মেম্বার যোগ হয়েছে!');
+                document.getElementById('newMemName').value = '';
+                document.getElementById('newMemUid').value = '';
+            } catch (e) { alert('সমস্যা হয়েছে!'); }
+        }
+
+        async function deleteMember(id) {
+            if (confirm('আপনি কি নিশ্চিত যে এই মেম্বারকে বাতিল করতে চান?')) {
+                try {
+                    await db.collection('artifacts', appId, 'public', 'data', 'members').doc(id).delete();
+                } catch (e) { alert('মুছে ফেলা যায়নি!'); }
+            }
+        }
+
+        // Apply Form
+        document.getElementById('applyForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const btn = document.getElementById('submitBtn');
+            const msg = document.getElementById('statusMsg');
+            btn.innerText = "পাঠানো হচ্ছে...";
+            btn.disabled = true;
+
+            const data = {
+                from_name: document.getElementById('app_name').value,
+                uid: document.getElementById('app_uid').value,
+                level: document.getElementById('app_level').value,
+                admin_email: "sufianahmod74@gmail.com"
+            };
+
+            try {
+                await emailjs.send("service_9lrbyws", "template_zk0rocs", data);
+                await db.collection('artifacts', appId, 'public', 'data', 'applications').add({ ...data, timestamp: new Date() });
+                msg.innerText = "আবেদন সফল হয়েছে!";
+                msg.className = "mt-6 text-center block p-4 rounded-xl bg-green-500/10 text-green-500 border border-green-500/20";
+                msg.classList.remove('hidden');
+                this.reset();
+            } catch (err) { alert('ত্রুটি হয়েছে!'); }
+            btn.innerText = "আবেদন জমা দিন";
+            btn.disabled = false;
+        });
+
+        window.onload = init;
+    </script>
+</body>
+</html>
+
